@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Runtime.ConstrainedExecution;
 
 /*
  * [HOW TO USE]
@@ -12,14 +13,13 @@ using Newtonsoft.Json.Linq;
  *      Get-Content -TotalCount 500 .\prompts.txt > 500promts.txt
  * 
  * - You can now take the prompts to try out with GPT. Only PlayGround has a lower token limit than fine-tuning.
+ * - If pasting in Foundry toolkit, make sure the last line reads "I: {{prompt}}".
  */
 
 public class Program
 {
     public static void ProcessComposeExtensions(string appName, dynamic a)
     {
-        // Handle input extensions aka composeExtensions
-        var composeExtensionCommands = new List<string>();
 
         if (a.inputExtensions != null)
         {
@@ -29,7 +29,10 @@ public class Program
                 {
                     foreach (var iec in ie.commands)
                     {
-                        composeExtensionCommands.Add(iec.title.ToString());
+                        // Some app's have description missing. Use title in those cases 'coz it's always there.
+                        var description = iec.description?.ToString() ?? iec.title.ToString();
+
+                        EmitPrompt(description, appName, iec.title.ToString());
                     }
                 }
             }
@@ -43,15 +46,10 @@ public class Program
                 {
                     foreach (var cec in ce.commands)
                     {
-                        composeExtensionCommands.Add(cec.title.ToString());
+                        EmitPrompt(cec.description.ToString(), appName, cec.title.ToString());
                     }
                 }
             }
-        }
-
-        foreach (var cec in composeExtensionCommands)
-        {
-            EmitPrompt(cec, appName, cec);
         }
     }
 
@@ -80,7 +78,14 @@ public class Program
 
     public static void EmitPrompt(string description, string appName, string command)
     {
-        Console.WriteLine($"{description}|@{appName} {command}");
+        Console.WriteLine($"I: {description};");
+        Console.WriteLine($"O: @{appName} {command};");
+    }
+
+    public static void EmitPromptStart()
+    {
+        Console.WriteLine("Convert this text to a programmatic command:");
+        Console.WriteLine();
     }
 
     public static void Main()
@@ -90,6 +95,8 @@ public class Program
 
         if (appDatas != null)
         {
+            EmitPromptStart();
+            
             foreach (var a in appDatas)
             {
                 var appName = a.name.Type == JTokenType.String ? a.name.ToString() : a.name.@short.ToString();
