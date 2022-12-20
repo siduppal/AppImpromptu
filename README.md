@@ -4,14 +4,22 @@ Attempt to generate GPT prompts to allow a Teams Bot to automatically identify a
 
 ## How to use
 - Build the code locally to generate the executable.
-- Run `AppDefnParser.exe` to get it to parse the `appDefinition.json` file which must be located alongside the exe, and emit lines of the following form:
-     `<description>`|@`<appName>` `<appCommand>`
-  
-     For example: `AppDefnParser.exe > prompts.txt`
+- Run `AppDefnParser.exe` to get it to parse the `appDefinition.json` file which must be located alongside the exe, and emit a bunch of prompts to feed GPT.
+- GPT completion API has ~4000 token limit for prompts, which is ok for experimentation, so you need to trim the prompts generated.
+- To take only 100 prompts from the main file, use may use PowerShell like so (feel free to update the number as you wish).
+       `Get-Content -TotalCount 100 .\prompts.txt > 100promts.txt`
+- Head on over to [Foundry Playground](https://foundrytoolkit.azurewebsites.net/playgroundv2)
+- Paste the prompt in.
+- Now type a phrase that you expect a user to send, prefixing it with `"I: "` and end it with a semi-colon. Submit the prompt to GPT to examine the results.
 
-     `<description>`, `<appName>`, `<appCommand>` are values hydrated from the app-manifest of each app in Teams' catalog.
-     
-- Now you can feed these prompts to GPT. However, the Playground has a limit on the tokens (while fine-tuning has higher limits).
-- To take only 500 prompts from the main file, use may use PowerShell like so
-       `Get-Content -TotalCount 500 .\prompts.txt > 500promts.txt`
-  
+### Note:
+If using the templating support in Foundry, remember to set the last statement as:
+`I: {{prompt}};`
+
+and for InputParameters, specify a value for the template parameter like so:
+
+`{"prompt": "what are our leads in Zoho?"}` 
+
+and you should see the model suggest you to use `@Zoho CRM Leads`! 🎉
+
+![image](https://user-images.githubusercontent.com/7799064/208786239-d00f3116-4e01-4862-bcc2-f056b041e7d1.png)
