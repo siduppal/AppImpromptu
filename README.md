@@ -2,7 +2,12 @@
 
 Attempt to generate GPT prompts to allow a Teams Bot to automatically identify apps from the Teams catalog that can assist the user.
 
-## How to use
+# Dost thou seek a TLDR?
+Just head on over here and fill in a value for prompt to experiment with the model predicting which app from Teams catalog could help. Remember that this only has ~100 examples to learn from, since this is an experiment.
+
+[Pray thee, click here](https://foundrytoolkit.azurewebsites.net/playgroundv2?session=4ba4dc3d-ce4d-4d52-9411-5fb51e7a6e0a) 👈
+
+## What's going on here?
 - Build the code locally to generate the executable.
 - Run `AppDefnParser.exe` to get it to parse the `appDefinition.json` file which must be located alongside the exe, and emit a bunch of prompts to feed GPT.
 - GPT completion API has ~4000 token limit for prompts, which is ok for experimentation, so you need to trim the prompts generated.
