@@ -18,7 +18,22 @@ using System.Runtime.ConstrainedExecution;
 
 public class Program
 {
-    public static void ProcessComposeExtensions(string appName, dynamic a)
+    #region State
+    private static ProcessedAppDefinitionsForPrompt processedAppDefinitions;
+    private static ProcessedAppDefinitionsForPrompt processedPreferredAppDefinitions;
+    #endregion
+
+    #region Consts
+    private readonly static string[] PrioritizedAppNames = new string[]
+    {
+        "Polly",
+        "ScrumGenius",
+        "SurveyMonkey"
+    };
+    #endregion
+
+    #region Logic for processing compose-extensions
+    private static void ProcessComposeExtensions(string appName, dynamic a)
     {
 
         if (a.inputExtensions != null)
@@ -32,7 +47,7 @@ public class Program
                         // Some app's have description missing. Use title in those cases 'coz it's always there.
                         var description = iec.description?.ToString() ?? iec.title.ToString();
 
-                        EmitPrompt(description, appName, iec.title.ToString());
+                        ProcessAppDefinition(description, appName, iec.title.ToString());
                     }
                 }
             }
@@ -46,14 +61,16 @@ public class Program
                 {
                     foreach (var cec in ce.commands)
                     {
-                        EmitPrompt(cec.description.ToString(), appName, cec.title.ToString());
+                        ProcessAppDefinition(cec.description.ToString(), appName, cec.title.ToString());
                     }
                 }
             }
         }
     }
+    #endregion
 
-    public static void ProcessBots(string appName, dynamic a)
+    #region Logic for processing bots
+    private static void ProcessBots(string appName, dynamic a)
     {
         if (a.bots != null)
         {
@@ -67,7 +84,7 @@ public class Program
                         {
                             foreach (var c in bcl.commands)
                             {
-                                EmitPrompt(c.description.ToString(), appName, c.title.ToString());
+                                ProcessAppDefinition(c.description.ToString(), appName, c.title.ToString());
                             }
                         }
                     }
@@ -75,28 +92,84 @@ public class Program
             }
         }
     }
+    #endregion
 
-    public static void EmitPrompt(string description, string appName, string command)
+    #region Logic for processing an app-defn
+    private static void ProcessAppDefinition(string description, string appName, string command)
+    {
+        if (description.Length >= 20) // Ignore command descriptions that are too short.
+        {
+            var appInfo = new AppInfoForPrompt
+            {
+                AppName = appName,
+                Description = description,
+                Command = command
+            };
+
+            if (PrioritizedAppNames.Contains(appName))
+            {
+                processedPreferredAppDefinitions.Add(appName, appInfo);
+            }
+            else
+            {
+                processedAppDefinitions.Add(appName, appInfo);
+            }
+
+        }
+    }
+    #endregion
+
+    #region Logic for emitting GPT prompts
+    private static void EmitPromptStart()
+    {
+        Console.WriteLine("Convert this text to a programmatic command:");
+        Console.WriteLine();
+    }
+    private static void EmitPromptLine(string description, string appName, string command)
     {
         Console.WriteLine($"I: {description};");
         Console.WriteLine($"O: @{appName} {command};");
     }
 
-    public static void EmitPromptStart()
+    #endregion
+
+    #region Helper class(es)
+    private class AppInfoForPrompt
     {
-        Console.WriteLine("Convert this text to a programmatic command:");
-        Console.WriteLine();
+        public string AppName { get; set; }
+        public string Description { get; set; }
+        public string Command { get; set; }
     }
+
+    private class ProcessedAppDefinitionsForPrompt
+        : Dictionary<string, List<AppInfoForPrompt>>
+    {
+        public void Add(string appName, AppInfoForPrompt appInfoForPrompt)
+        {
+            if (! this.ContainsKey(appName))
+            {
+                this.Add(appName, new List<AppInfoForPrompt>());
+            }
+
+            this[appName].Add(appInfoForPrompt);
+        }
+    }
+    #endregion
+
 
     public static void Main()
     {
+        // Reset our state
+        processedAppDefinitions = new ProcessedAppDefinitionsForPrompt();
+        processedPreferredAppDefinitions = new ProcessedAppDefinitionsForPrompt();
+
+        // Start local state
         var appDefintions = File.ReadAllText("appDefinitions.json");
         var appDatas = JsonConvert.DeserializeObject<dynamic>(appDefintions)?.appDefinitions;
 
+        // Process the app-manifests from catalog
         if (appDatas != null)
-        {
-            EmitPromptStart();
-            
+        {            
             foreach (var a in appDatas)
             {
                 var appName = a.name.Type == JTokenType.String ? a.name.ToString() : a.name.@short.ToString();
@@ -106,6 +179,27 @@ public class Program
                 ProcessBots(appName, a);
                 
             }
+        }
+
+        // Emit the prompts
+        EmitPromptStart();
+
+        // Emit the preferred apps first
+        foreach (var kvp in processedPreferredAppDefinitions)
+        {
+            foreach (var i in kvp.Value)
+            {
+                EmitPromptLine(i.Description, i.AppName, i.Command);
+            }
+        }
+
+        // Emit the rest of the apps next
+        foreach (var kvp in processedAppDefinitions)
+        {
+            foreach (var i in kvp.Value)
+            {
+                EmitPromptLine(i.Description, i.AppName, i.Command);
+            } 
         }
 
     }
