@@ -1,8 +1,6 @@
 ﻿using AppDefnParser.ConfigProcessors;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Reflection.Metadata.Ecma335;
-using System.Runtime.ConstrainedExecution;
 
 /*
  * [HOW TO USE]
@@ -21,9 +19,11 @@ using System.Runtime.ConstrainedExecution;
 public class Program
 {
     #region State
-    private static ProcessedAppDefinitionsForPrompt processedAppDefinitions;
-    private static ProcessedAppDefinitionsForPrompt processedPreferredAppDefinitions;
-    private static PrioritizedAppConfig prioritizedAppNames;
+    private static ProcessedAppDefinitionsForPrompt? processedAppDefinitions;
+    private static ProcessedAppDefinitionsForPrompt? processedPreferredAppDefinitions;
+    private static PrioritizedAppConfig? prioritizedAppNames;
+    private static IntentPhrasesAssist? phraseAssist;
+    private static AppIntentsConfig? appIntentAssist;
     #endregion
 
     #region Logic for processing compose-extensions
@@ -102,11 +102,11 @@ public class Program
 
             if (prioritizedAppNames?.PrioritizedAppNames?.Contains(appName) ?? false)
             {
-                processedPreferredAppDefinitions.Add(appName, appInfo);
+                processedPreferredAppDefinitions?.Add(appName, appInfo);
             }
             else
             {
-                processedAppDefinitions.Add(appName, appInfo);
+                processedAppDefinitions?.Add(appName, appInfo);
             }
 
         }
@@ -121,8 +121,29 @@ public class Program
     }
     private static void EmitPromptLine(string description, string appName, string command)
     {
-        Console.WriteLine($"I: {description};");
-        Console.WriteLine($"O: @{appName} {command};");
+        // Use the assist to identify intents of the specified command
+        var intent = appIntentAssist?.GetAppCommandIntent(appName, command);
+
+        if (intent != null)
+        {
+            // Use the intent to identify relevant phrases.
+            var phrases = phraseAssist?.GetPhrases(intent);
+
+            if (phrases != null)
+            {
+                // Emit phrases to guide GPT on invocation of app command.
+                foreach (var phrase in phrases)
+                {
+                    Console.WriteLine($"I: {phrase};");
+                    Console.WriteLine($"O: @{appName} {command};");
+                }
+            }
+        }
+        else
+        {
+            Console.WriteLine($"I: {description};");
+            Console.WriteLine($"O: @{appName} {command};");
+        }
     }
 
     #endregion
@@ -131,9 +152,9 @@ public class Program
 
     private class AppInfoForPrompt
     {
-        public string AppName { get; set; }
-        public string Description { get; set; }
-        public string Command { get; set; }
+        public string? AppName { get; set; }
+        public string? Description { get; set; }
+        public string? Command { get; set; }
     }
 
     private class ProcessedAppDefinitionsForPrompt
@@ -158,6 +179,8 @@ public class Program
         processedAppDefinitions = new ProcessedAppDefinitionsForPrompt();
         processedPreferredAppDefinitions = new ProcessedAppDefinitionsForPrompt();
         prioritizedAppNames = PrioritizedAppConfig.Load(@"Configs\PrioritizedAppNames.json");
+        phraseAssist = IntentPhrasesAssist.Load(@"Configs\IntentPhrases.json");
+        appIntentAssist = AppIntentsConfig.Load(@"Configs\AppIntents.json");
 
         // Start local state
         var appDefintions = File.ReadAllText(@"Data\appDefinitions.json");
@@ -173,7 +196,6 @@ public class Program
                 ProcessComposeExtensions(appName, a);
 
                 ProcessBots(appName, a);
-
             }
         }
 
@@ -185,7 +207,7 @@ public class Program
         {
             foreach (var i in kvp.Value)
             {
-                EmitPromptLine(i.Description, i.AppName, i.Command);
+                EmitPromptLine(i?.Description ?? string.Empty, i?.AppName ?? string.Empty, i?.Command ?? string.Empty);
             }
         }
 
@@ -194,7 +216,7 @@ public class Program
         {
             foreach (var i in kvp.Value)
             {
-                EmitPromptLine(i.Description, i.AppName, i.Command);
+                EmitPromptLine(i?.Description ?? string.Empty, i?.AppName ?? string.Empty, i?.Command ?? string.Empty);
             }
         }
 

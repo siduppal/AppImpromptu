@@ -1,17 +1,15 @@
 ﻿using Newtonsoft.Json;
-using System.Globalization;
 
 namespace AppDefnParser.ConfigProcessors
 {
 
     internal class IntentPhrasesAssist
     {
-        private IntentPhrases[]? IntentPhrases { get; set; }
+        public IntentPhrases[]? IntentPhrases { get; set; }
 
-        public static IntentPhrasesAssist? Load(string filePath)
+        public static IntentPhrasesAssist Load(string filePath)
         {
-            var json = System.IO.File.ReadAllText(filePath);
-            return JsonConvert.DeserializeObject<IntentPhrasesAssist>(json);
+            return JsonConvert.DeserializeObject<IntentPhrasesAssist>(System.IO.File.ReadAllText(filePath)) ?? new IntentPhrasesAssist();
         }
 
         public string[]? GetPhrases(string intentName)

@@ -4,24 +4,24 @@ namespace AppDefnParser.ConfigProcessors
 {
     internal class AppIntentsConfig
     {
-        private AppCommandIntent[]? AppIntents { get; set; }
+        public AppCommandIntent[]? AppIntents { get; set; }
 
-        internal AppCommandIntent? GetAppIntent(string appName)
+        internal string? GetAppCommandIntent(string appName, string command)
         {
-            return AppIntents?.FirstOrDefault(x => x.AppName == appName);
+            return AppIntents?
+                .FirstOrDefault(x => x?.AppName == appName)?
+                .CommandIntents?
+                .FirstOrDefault(x => x?.Command == command)?
+                .Intent;
         }
 
-        internal static AppIntentsConfig? Load(string filePath)
+        internal static AppIntentsConfig Load(string filePath)
         {
             var json = File.ReadAllText(filePath);
 
             var root = JsonConvert.DeserializeObject<AppIntentsConfig>(json);
 
-            return root;
-        }
-        
-        private AppIntentsConfig()
-        {
+            return root ?? new AppIntentsConfig();
         }
 
     }

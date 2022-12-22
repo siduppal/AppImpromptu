@@ -2,7 +2,7 @@
 
 namespace AppDefnParser.ConfigProcessors
 {
-    public class PrioritizedAppConfig
+    internal class PrioritizedAppConfig
     {
         public string[]? PrioritizedAppNames { get; set; }
 
