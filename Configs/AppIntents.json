@@ -1,0 +1,13 @@
+{
+  "AppIntents": [
+    {
+      "AppName": "Polly",
+      "CommandIntents": [
+        {
+          "Command": "Create a new polly",
+          "Intent": "PollSurveyIntent"
+        }
+      ]
+    }
+  ]
+}

@@ -9,11 +9,23 @@
 
   <ItemGroup>
     <None Remove="appDefinitions.json" />
+    <None Remove="Configs\AppIntents.json" />
+    <None Remove="Configs\PrioritizedAppNames.json" />
+    <None Remove="IntentPhrases.json" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="appDefinitions.json">
+    <Content Include="Configs\AppIntents.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Configs\PrioritizedAppNames.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\appDefinitions.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Configs\IntentPhrases.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 

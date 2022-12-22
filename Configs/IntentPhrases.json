@@ -1,0 +1,14 @@
+{
+  "IntentPhrases": [
+    {
+      "Intent": "PollSurveyIntent",
+      "ExamplePhrases": [
+        "What do you think about {PollQuestion}",
+        "Where should we go for lunch?",
+        "Which movie should we go watch?",
+        "What day works best for everyone for a team-meeting",
+        "What is the best time for a team-meeting"
+      ]
+    }
+  ]
+}

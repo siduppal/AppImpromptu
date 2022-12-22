@@ -1,5 +1,7 @@
-﻿using Newtonsoft.Json;
+﻿using AppDefnParser.ConfigProcessors;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.ConstrainedExecution;
 
 /*
@@ -21,15 +23,7 @@ public class Program
     #region State
     private static ProcessedAppDefinitionsForPrompt processedAppDefinitions;
     private static ProcessedAppDefinitionsForPrompt processedPreferredAppDefinitions;
-    #endregion
-
-    #region Consts
-    private readonly static string[] PrioritizedAppNames = new string[]
-    {
-        "Polly",
-        "ScrumGenius",
-        "SurveyMonkey"
-    };
+    private static PrioritizedAppConfig prioritizedAppNames;
     #endregion
 
     #region Logic for processing compose-extensions
@@ -106,7 +100,7 @@ public class Program
                 Command = command
             };
 
-            if (PrioritizedAppNames.Contains(appName))
+            if (prioritizedAppNames?.PrioritizedAppNames?.Contains(appName) ?? false)
             {
                 processedPreferredAppDefinitions.Add(appName, appInfo);
             }
@@ -134,6 +128,7 @@ public class Program
     #endregion
 
     #region Helper class(es)
+
     private class AppInfoForPrompt
     {
         public string AppName { get; set; }
@@ -146,7 +141,7 @@ public class Program
     {
         public void Add(string appName, AppInfoForPrompt appInfoForPrompt)
         {
-            if (! this.ContainsKey(appName))
+            if (!this.ContainsKey(appName))
             {
                 this.Add(appName, new List<AppInfoForPrompt>());
             }
@@ -154,22 +149,23 @@ public class Program
             this[appName].Add(appInfoForPrompt);
         }
     }
-    #endregion
 
+    #endregion
 
     public static void Main()
     {
         // Reset our state
         processedAppDefinitions = new ProcessedAppDefinitionsForPrompt();
         processedPreferredAppDefinitions = new ProcessedAppDefinitionsForPrompt();
+        prioritizedAppNames = PrioritizedAppConfig.Load(@"Configs\PrioritizedAppNames.json");
 
         // Start local state
-        var appDefintions = File.ReadAllText("appDefinitions.json");
+        var appDefintions = File.ReadAllText(@"Data\appDefinitions.json");
         var appDatas = JsonConvert.DeserializeObject<dynamic>(appDefintions)?.appDefinitions;
 
         // Process the app-manifests from catalog
         if (appDatas != null)
-        {            
+        {
             foreach (var a in appDatas)
             {
                 var appName = a.name.Type == JTokenType.String ? a.name.ToString() : a.name.@short.ToString();
@@ -177,7 +173,7 @@ public class Program
                 ProcessComposeExtensions(appName, a);
 
                 ProcessBots(appName, a);
-                
+
             }
         }
 
@@ -199,7 +195,7 @@ public class Program
             foreach (var i in kvp.Value)
             {
                 EmitPromptLine(i.Description, i.AppName, i.Command);
-            } 
+            }
         }
 
     }
