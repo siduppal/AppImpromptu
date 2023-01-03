@@ -21,5 +21,3 @@ To use templating in Foundry:
 - Set the last statement as `I: {{prompt}};`
 - Specify a value for the "prompt" template parameter in the InputParameters, e.g. {"prompt": "what are our leads in Zoho?"}
 - If everything is set up correctly, the model should suggest using @Zoho CRM Leads 🎉
-
-![image](https://user-images.githubusercontent.com/7799064/208786239-d00f3116-4e01-4862-bcc2-f056b041e7d1.png)
