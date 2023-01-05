@@ -27,8 +27,9 @@ public class Program
     #endregion
 
     #region Logic for processing compose-extensions
-    private static void ProcessComposeExtensions(string appName, dynamic a)
+    private static bool ProcessComposeExtensions(string appName, dynamic a)
     {
+        var composeExtensionsFound = false;
 
         if (a.inputExtensions != null)
         {
@@ -42,6 +43,8 @@ public class Program
                         var description = iec.description?.ToString() ?? iec.title.ToString();
 
                         ProcessAppDefinition(description, appName, iec.title.ToString());
+
+                        composeExtensionsFound = true;
                     }
                 }
             }
@@ -56,16 +59,22 @@ public class Program
                     foreach (var cec in ce.commands)
                     {
                         ProcessAppDefinition(cec.description.ToString(), appName, cec.title.ToString());
+
+                        composeExtensionsFound = true;
                     }
                 }
             }
         }
+
+        return composeExtensionsFound;
     }
     #endregion
 
     #region Logic for processing bots
-    private static void ProcessBots(string appName, dynamic a)
+    private static bool ProcessBots(string appName, dynamic a)
     {
+        var botsFound = false;
+
         if (a.bots != null)
         {
             foreach (var b in a.bots)
@@ -79,12 +88,16 @@ public class Program
                             foreach (var c in bcl.commands)
                             {
                                 ProcessAppDefinition(c.description.ToString(), appName, c.title.ToString());
+
+                                botsFound = true;
                             }
                         }
                     }
                 }
             }
         }
+
+        return botsFound;
     }
     #endregion
 
@@ -186,6 +199,10 @@ public class Program
         var appDefintions = File.ReadAllText(@"Data\appDefinitions.json");
         var appDatas = JsonConvert.DeserializeObject<dynamic>(appDefintions)?.appDefinitions;
 
+        var conversationalAppImageUrls = new List<string>();
+
+        var count = 0;
+
         // Process the app-manifests from catalog
         if (appDatas != null)
         {
@@ -193,32 +210,51 @@ public class Program
             {
                 var appName = a.name.Type == JTokenType.String ? a.name.ToString() : a.name.@short.ToString();
 
-                ProcessComposeExtensions(appName, a);
+                var composeExtensionsFound = ProcessComposeExtensions(appName, a);
 
-                ProcessBots(appName, a);
+                var botsFound = ProcessBots(appName, a);
+
+                if (composeExtensionsFound || botsFound)
+                {
+                    conversationalAppImageUrls.Add(a.largeImageUrl.ToString());
+                }
+
+                count++;
             }
         }
 
-        // Emit the prompts
-        EmitPromptStart();
+        //// Emit the prompts
+        //EmitPromptStart();
 
-        // Emit the preferred apps first
-        foreach (var kvp in processedPreferredAppDefinitions)
+        //// Emit the preferred apps first
+        //foreach (var kvp in processedPreferredAppDefinitions)
+        //{
+        //    foreach (var i in kvp.Value)
+        //    {
+        //        EmitPromptLine(i?.Description ?? string.Empty, i?.AppName ?? string.Empty, i?.Command ?? string.Empty);
+        //    }
+        //}
+
+        //// Emit the rest of the apps next
+        //foreach (var kvp in processedAppDefinitions)
+        //{
+        //    foreach (var i in kvp.Value)
+        //    {
+        //        EmitPromptLine(i?.Description ?? string.Empty, i?.AppName ?? string.Empty, i?.Command ?? string.Empty);
+        //    }
+        //}
+
+        Console.WriteLine("<html>");
+
+        Console.WriteLine("<body>");
+
+        foreach (var imgUrl in conversationalAppImageUrls)
         {
-            foreach (var i in kvp.Value)
-            {
-                EmitPromptLine(i?.Description ?? string.Empty, i?.AppName ?? string.Empty, i?.Command ?? string.Empty);
-            }
+            Console.WriteLine($"<img src='{imgUrl}' />");
         }
 
-        // Emit the rest of the apps next
-        foreach (var kvp in processedAppDefinitions)
-        {
-            foreach (var i in kvp.Value)
-            {
-                EmitPromptLine(i?.Description ?? string.Empty, i?.AppName ?? string.Empty, i?.Command ?? string.Empty);
-            }
-        }
+        Console.WriteLine("</body>");
 
+        Console.WriteLine("</html>");
     }
 }
